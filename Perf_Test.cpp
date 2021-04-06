@@ -48,6 +48,40 @@ static void inheritance_vec(benchmark::State& state) {
 	}
 }
 
+static void inheritance_vec_rand(benchmark::State& state) {
+	using namespace in;
+	std::vector<A*> as;
+	std::vector<B> bs;
+	std::vector<C> cs;
+	bs.resize(state.range(0) / 2);
+	cs.resize(state.range(0) / 2);
+
+	size_t b_i = 0;
+	size_t c_i = 0;
+
+	for (size_t i = 0; i < state.range(0); ++i) {
+		if (b_i >= bs.size()) {
+			as.push_back(&cs[c_i++]);
+		} else if (c_i >= cs.size()) {
+			as.push_back(&bs[b_i++]);
+		} else {
+			if (rand() % 2) {
+				as.push_back(&bs[b_i++]);
+			} else {
+				as.push_back(&cs[c_i++]);
+			}
+		}
+	}
+
+	for (auto _ : state) {
+		for (auto& x : as) {
+			x->f();
+			benchmark::DoNotOptimize(x->x);
+			benchmark::ClobberMemory();
+		}
+	}
+}
+
 static void inheritance_seq(benchmark::State& state) {
 	using namespace in;
 	std::vector<std::unique_ptr<A>> as;
@@ -82,6 +116,7 @@ static void inheritance_rand(benchmark::State& state) {
 }
 // Register the function as a benchmark
 BENCHMARK(inheritance_vec)->Range(8, 8 << 15)->Unit(benchmark::kMicrosecond);
+BENCHMARK(inheritance_vec_rand)->Range(8, 8 << 15)->Unit(benchmark::kMicrosecond);
 BENCHMARK(inheritance_seq)->Range(8, 8 << 15)->Unit(benchmark::kMicrosecond);
 BENCHMARK(inheritance_rand)->Range(8, 8 << 15)->Unit(benchmark::kMicrosecond);
 
